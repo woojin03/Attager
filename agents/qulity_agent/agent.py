@@ -3,42 +3,42 @@ from google.adk.agents import LlmAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
-from google.adk import events
 from google.genai import types
 
 # redis 관련 툴 함수 불러오기
-from ..tools.redis_item_tools import (
-    get_item_details,
-    track_item_inventory,
-    update_item_status,
+from tools.redis_quality_tools import (
+    get_items_for_return_qc,
+    get_return_item_disposition,
+    get_recall_items_list,
 )
 
 # --- 1. Agent 정의 ---
-item_agent = LlmAgent(
+root_agent = LlmAgent(
     model=LiteLlm(model="ollama/mistral"),
-    name="ItemAgent",
+    name="QualityAgent",
     description=(
-        "상품 정보를 관리하고, 재고를 추적하며, 상품 관련 작업을 처리합니다."
+        "반품·리콜 상품의 품질 검사를 수행하고 격리/처분을 결정하며, "
+        "검사 결과에 따라 판매 가능 재고 상태를 관리합니다."
     ),
-    instruction="""너는 상품 관리 에이전트다.
-    - 사용자가 상품 ID를 말하면 반드시 get_item_details 툴을 호출해야 한다.
-    - '재고 수량'을 물어보면 track_item_inventory 툴을 호출해야 한다.
-    - '상품 상태 업데이트'를 요청하면 update_item_status 툴을 호출해야 한다.
+    instruction="""너는 품질 관리 에이전트다.\
+    - '품질 검사가 필요한 반품 상품'을 요청하면 get_items_for_return_qc 툴을 호출해야 한다.\
+    - '반품 상품의 최종 처분'을 조회하려면 get_return_item_disposition 툴을 호출해야 한다.\
+    - '특정 제품 ID의 리콜 대상 상품 리스트'를 요청하면 get_recall_items_list 툴을 호출해야 한다.
     """,
     tools=[
-        get_item_details,
-        track_item_inventory,
-        update_item_status,
+        get_items_for_return_qc,
+        get_return_item_disposition,
+        get_recall_items_list,
     ],
 )
 
 # --- 2. Runner + 세션 서비스 ---
-APP_NAME = "item_management_app"
+APP_NAME = "quality_management_app"
 USER_ID = "user1"
 SESSION_ID = "sess1"
 
 session_service = InMemorySessionService()
-runner = Runner(agent=item_agent, app_name=APP_NAME, session_service=session_service)
+runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_service)
 
 # --- 3. 실행 ---
 async def main():
@@ -47,14 +47,14 @@ async def main():
         app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID
     )
 
-    print(">>> User Input: ITEM001 상품 상세 정보 알려줘")
+    print(">>> User Input: 반품 상품 ITEM002 품질 검사 결과 good, 처분 재판매로 해줘")
 
     final_response = "응답 없음"
 
     # Content/Part 객체 생성
     user_message = types.Content(
         role="user",
-        parts=[types.Part(text="ITEM001 상품 상세 정보 알려줘")]
+        parts=[types.Part(text="반품 상품 ITEM002 품질 검사 결과 good, 처분 재판매로 해줘")]
     )
 
     # run_async 호출

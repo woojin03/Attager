@@ -1,4 +1,8 @@
 redis
 google-adk
 litellm
+requests
+fastapi
+uvicorn
+google-generativeai
 

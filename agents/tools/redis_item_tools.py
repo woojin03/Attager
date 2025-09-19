@@ -1,7 +1,7 @@
 # /home/agents/tools/redis_tools.py
-# Redis 연결
 import redis
 
+# Redis 연결
 redis_client = redis.Redis(
     host="localhost",
     port=6379,
