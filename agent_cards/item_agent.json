@@ -1,0 +1,23 @@
+{
+    "name": "Item Agent",
+    "description": "delivery_agent.description",
+    "url": "http://${ITEM_AGENT_HOST:-localhost}:10002",
+    "version": "1.0.0",
+    "defaultInputModes": ["text", "text/plain"],
+    "defaultOutputModes": ["text", "text/plain"],
+    "capabilities": {
+      "streaming": true
+    },
+    "skills": [
+      {
+        "id": "item_agent",
+        "name": "read item data",
+        "description": "Read requested item data from database",
+        "tags": ["item"],
+        "examples": [
+          "Read item data for ITEM1001"
+        ]
+      }
+    ]
+  }
+  

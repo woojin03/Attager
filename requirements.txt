@@ -1,0 +1,20 @@
+# Core dependencies for Orchestrator Agent
+google-adk          # Google Agent Development Kit
+requests           # HTTP requests for agent communication
+uvicorn           # ASGI server for running the agent
+fastapi          # Web framework (if needed by google-adk)
+litellm
+redis
+google-generativeai
+a2a-sdk
+
+# Development and testing
+pytest            # Testing framework
+pytest-asyncio    # Async testing support
+
+# Optional: Ollama client (if needed)
+# ollama
+
+# Utility packages
+python-dotenv      # Environment variable management
+pyyaml               # YAML configuration support

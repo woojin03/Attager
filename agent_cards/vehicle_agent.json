@@ -1,0 +1,23 @@
+{
+    "name": "Vehicle Agent",
+    "description": "vehicle_agent.description",
+    "url": "http://${VEHICLE_AGENT_HOST:-localhost}:10004",
+    "version": "1.0.0",
+    "defaultInputModes": ["text", "text/plain"],
+    "defaultOutputModes": ["text", "text/plain"],
+    "capabilities": {
+      "streaming": true
+    },
+    "skills": [
+      {
+        "id": "vehicle_agent",
+        "name": "read vehicle data",
+        "description": "Read requested vehicle data from database",
+        "tags": ["vehicle"],
+        "examples": [
+          "현재 가용한 차량 현황을 확인해줘"
+        ]
+      }
+    ]
+  }
+  

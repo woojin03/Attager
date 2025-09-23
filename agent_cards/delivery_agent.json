@@ -1,0 +1,23 @@
+{
+    "name": "Delivery Agent",
+    "description": "delivery_agent.description",
+    "url": "http://${DELIVERY_AGENT_HOST:-localhost}:10001",
+    "version": "1.0.0",
+    "defaultInputModes": ["text", "text/plain"],
+    "defaultOutputModes": ["text", "text/plain"],
+    "capabilities": {
+      "streaming": true
+    },
+    "skills": [
+      {
+        "id": "delivery_agent",
+        "name": "read delivery data",
+        "description": "Read requested delivery data from database",
+        "tags": ["delivery"],
+        "examples": [
+          "Read delivery data for ORD1001"
+        ]
+      }
+    ]
+  }
+  
