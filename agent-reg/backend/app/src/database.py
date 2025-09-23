@@ -35,18 +35,21 @@ class AgentDatabase:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS agents (
                     id TEXT PRIMARY KEY,
-                    agent_card TEXT NOT NULL,
+                    agent_card TEXT NOT NULL,  -- JSON string
                     owner TEXT,
                     created_at TEXT NOT NULL,
-                    last_heartbeat TEXT
+                    last_heartbeat TEXT,
+                    -- Extracted fields for efficient querying
+                    name TEXT GENERATED ALWAYS AS (json_extract(agent_card, '$.name')) STORED,
+                    capabilities TEXT GENERATED ALWAYS AS (json_extract(agent_card, '$.capabilities')) STORED
                 )
             """)
             
             # Create indexes for efficient querying
             conn.execute("CREATE INDEX IF NOT EXISTS idx_agents_owner ON agents(owner)")
-            #conn.execute("CREATE INDEX IF NOT EXISTS idx_agents_name ON agents(name)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_agents_name ON agents(name)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_agents_last_heartbeat ON agents(last_heartbeat)")
-            #conn.execute("CREATE INDEX IF NOT EXISTS idx_agents_capabilities ON agents(capabilities)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_agents_capabilities ON agents(capabilities)")
             
             conn.commit()
         finally:
@@ -118,14 +121,28 @@ class AgentDatabase:
             conditions.append("owner = ?")
             params.append(owner)
         
-        # Now handle name and capabilities filtering within Python
-        # For now, we'll only use direct DB filters for owner and last_heartbeat
+        if name:
+            conditions.append("name LIKE ?")
+            params.append(f"%{name.lower()}%")
         
         if only_alive:
             cutoff_time = datetime.now(timezone.utc)
             cutoff_iso = (cutoff_time.timestamp() - 300) * 1000  # 5 minutes ago in ms
             conditions.append("datetime(last_heartbeat) > datetime(?, 'unixepoch')")
             params.append(cutoff_iso / 1000)
+        
+        if streaming:
+            conditions.append("json_extract(capabilities, '$.streaming') = 1")
+        
+        if push_notifications:
+            conditions.append("(json_extract(capabilities, '$.pushNotifications') = 1 OR json_extract(capabilities, '$.push_notifications') = 1)")
+        
+        if state_transition_history:
+            conditions.append("(json_extract(capabilities, '$.stateTransitionHistory') = 1 OR json_extract(capabilities, '$.state_transition_history') = 1)")
+        
+        if skill:
+            conditions.append("EXISTS (SELECT 1 FROM json_each(agent_card, '$.skills') WHERE json_extract(value, '$.id') = ?)")
+            params.append(skill)
         
         # Build final query
         where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
@@ -147,36 +164,7 @@ class AgentDatabase:
                     'created_at': row['created_at'],
                     'last_heartbeat': row['last_heartbeat']
                 })
-                
-                # Apply in-memory filters for name and capabilities
-                match = True
-                if name:
-                    agent_name = agent_data.get('name', '').lower()
-                    if name.lower() not in agent_name:
-                        match = False
-                
-                if match and skill:
-                    agent_skills = agent_data.get('skills', [])
-                    if not any(s.get('id') == skill for s in agent_skills):
-                        match = False
-                
-                if match and streaming:
-                    capabilities = agent_data.get('capabilities', {})
-                    if not capabilities.get('streaming'):
-                        match = False
-                
-                if match and push_notifications:
-                    capabilities = agent_data.get('capabilities', {})
-                    if not (capabilities.get('pushNotifications') or capabilities.get('push_notifications')):
-                        match = False
-                
-                if match and state_transition_history:
-                    capabilities = agent_data.get('capabilities', {})
-                    if not (capabilities.get('stateTransitionHistory') or capabilities.get('state_transition_history')):
-                        match = False
-                        
-                if match:
-                    results.append(agent_data)
+                results.append(agent_data)
             
             return results
     
