@@ -1,0 +1,121 @@
+services:
+  # Redis Database
+  redis:
+    image: redis:7-alpine
+    container_name: logistics-db
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./agentDB/redis-data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  # Orchestrator Agent
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Orchestrator/Dockerfile
+    container_name: orchestrator-agent
+    ports:
+      - "10000:10000"
+    depends_on:
+      - redis
+      - delivery-agent
+      - item-agent
+      - quality-agent
+      - vehicle-agent
+    volumes:
+      - ./agent_cards:/app/agent_cards
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OLLAMA_HOST=host.docker.internal
+      - DELIVERY_AGENT_HOST=delivery-agent
+      - ITEM_AGENT_HOST=item-agent
+      - QUALITY_AGENT_HOST=quality-agent
+      - VEHICLE_AGENT_HOST=vehicle-agent
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  # Delivery Agent
+  delivery-agent:
+    build:
+      context: .
+      dockerfile: agents/delivery_agent/Dockerfile
+    container_name: delivery-agent
+    ports:
+      - "10001:10001"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OLLAMA_HOST=host.docker.internal
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  # Item Agent
+  item-agent:
+    build:
+      context: .
+      dockerfile: agents/item_agent/Dockerfile
+    container_name: item-agent
+    ports:
+      - "10002:10002"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OLLAMA_HOST=host.docker.internal
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  # Quality Agent
+  quality-agent:
+    build:
+      context: .
+      dockerfile: agents/qulity_agent/Dockerfile
+    container_name: quality-agent
+    ports:
+      - "10003:10003"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OLLAMA_HOST=host.docker.internal
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  # Vehicle Agent
+  vehicle-agent:
+    build:
+      context: .
+      dockerfile: agents/vehicle_agent/Dockerfile
+    container_name: vehicle-agent
+    ports:
+      - "10004:10004"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OLLAMA_HOST=host.docker.internal
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+networks:
+  agent-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local

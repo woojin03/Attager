@@ -1,0 +1,23 @@
+{
+    "name": "Quality Agent",
+    "description": "quality_agent.description",
+    "url": "http://${QUALITY_AGENT_HOST:-localhost}:10003",
+    "version": "1.0.0",
+    "defaultInputModes": ["text", "text/plain"],
+    "defaultOutputModes": ["text", "text/plain"],
+    "capabilities": {
+      "streaming": true
+    },
+    "skills": [
+      {
+        "id": "quality_agent",
+        "name": "read quality data",
+        "description": "Read requested quality data from database",
+        "tags": ["quality"],
+        "examples": [
+          "item1001의 품질 상태를 확인하고 처분 재판매로 해줘줘"
+        ]
+      }
+    ]
+  }
+  
