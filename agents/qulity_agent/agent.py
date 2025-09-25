@@ -1,29 +1,51 @@
 import asyncio
 import os
+import logging
+import sys
+# Docker 환경에서는 현재 디렉토리를 PYTHONPATH에 추가
+sys.path.insert(0, '.')
+from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
 from google.genai import types
+from utils.model_config import get_model_with_fallback
+
+# 현재 폴더의 .env 파일 로드
+load_dotenv()
 
 # redis 관련 툴 함수 불러오기
 from tools.redis_quality_tools import (
     get_items_for_return_qc,
     get_return_item_disposition,
     get_recall_items_list,
-)   
+)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)   
 
 # --- 1. Agent 정의 ---
-ollama_host = os.getenv("OLLAMA_HOST", "localhost")
-root_agent = LlmAgent(
-    model=LiteLlm(
+# Gemini 우선, 실패시 로컬 LLM 사용
+try:
+    model = get_model_with_fallback()
+    logger.info(f"QualityAgent 모델 설정 완료: {type(model).__name__ if hasattr(model, '__class__') else model}")
+except Exception as e:
+    logger.error(f"QualityAgent 모델 설정 실패: {e}")
+    # 최후의 fallback
+    ollama_host = os.getenv("OLLAMA_HOST", "localhost")
+    model = LiteLlm(
         model="ollama_chat/gpt-oss:20b",
         api_base=f"http://{ollama_host}:11434"
-    ),
+    )
+    logger.info("QualityAgent 최후 fallback으로 로컬 LLM 사용")
+
+root_agent = LlmAgent(
+    model=model,
     name="QualityAgent",
     description=(
         "반품·리콜 상품의 품질 검사를 수행하고 격리/처분을 결정하며, "
-        "검사 결과에 따라 판매 가능 재고 상태를 관리합니다."
+        "검사 결과에 따라 판매 가능 재고 상태를 관리하는 에이전트 - Gemini/Local LLM hybrid"
     ),
     instruction="""너는 품질 관리 에이전트다.\
     - '품질 검사가 필요한 반품 상품'을 요청하면 get_items_for_return_qc 툴을 호출해야 한다.\

@@ -1,26 +1,48 @@
 # delivery_agent.py
 import asyncio
 import os
+import logging
+import sys
+# Docker 환경에서는 현재 디렉토리를 PYTHONPATH에 추가
+sys.path.insert(0, '.')
+from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
 from google.genai import types
+from utils.model_config import get_model_with_fallback
+
+# 현재 폴더의 .env 파일 로드
+load_dotenv()
 from tools.redis_delivery_tools import (
     get_delivery_data,
     get_all_deliveries,
     get_completed_deliveries,
 )
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 # --- 1. Agent 정의 ---
-ollama_host = os.getenv("OLLAMA_HOST", "localhost")
-root_agent = LlmAgent(
-    model=LiteLlm(
+# Gemini 우선, 실패시 로컬 LLM 사용
+try:
+    model = get_model_with_fallback()
+    logger.info(f"DeliveryAgent 모델 설정 완료: {type(model).__name__ if hasattr(model, '__class__') else model}")
+except Exception as e:
+    logger.error(f"DeliveryAgent 모델 설정 실패: {e}")
+    # 최후의 fallback
+    ollama_host = os.getenv("OLLAMA_HOST", "localhost")
+    model = LiteLlm(
         model="ollama_chat/gpt-oss:20b",
         api_base=f"http://{ollama_host}:11434"
-    ),
+    )
+    logger.info("DeliveryAgent 최후 fallback으로 로컬 LLM 사용")
+
+root_agent = LlmAgent(
+    model=model,
     name="DeliveryAgent",
-    description="Redis에 저장된 배송 정보를 조회하는 간단한 에이전트",
+    description="Redis에 저장된 배송 정보를 조회하는 에이전트 - Gemini/Local LLM hybrid",
     instruction="""너는 배송 관리 에이전트다.
     - 사용자가 주문번호를 말하면 반드시 get_delivery_data 툴을 호출해야 한다.
     - '모든 배송 데이터'를 원하면 get_all_deliveries 툴을 호출해야 한다.

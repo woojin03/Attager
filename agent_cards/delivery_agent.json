@@ -1,7 +1,7 @@
 {
     "name": "Delivery Agent",
     "description": "delivery_agent.description",
-    "url": "http://${DELIVERY_AGENT_HOST:-localhost}:10001",
+    "url": "http://localhost:10001",
     "version": "1.0.0",
     "defaultInputModes": ["text", "text/plain"],
     "defaultOutputModes": ["text", "text/plain"],

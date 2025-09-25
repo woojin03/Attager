@@ -1,5 +1,6 @@
 # /home/agents/tools/redis_tools.py
 import redis
+import json
 import os
 
 # Redis 연결
@@ -61,14 +62,16 @@ def get_redelivery_request_status(original_order_id: str, item_id: str) -> dict:
         return {"status": "error", "message": f"Redelivery request for {original_order_id}/{item_id} not found."}
     return {"status": "success", "data": data}
 
-def update_delivery_route(delivery_id: str, new_route: list[str]) -> dict:
-    """주어진 배송 ID의 배송 경로를 업데이트합니다."""
+def update_delivery_route(delivery_id: str, new_route: str) -> dict:
+    """주어진 배송 ID의 배송 경로를 업데이트합니다. new_route는 쉼표로 구분된 위치 목록입니다."""
     delivery_key = f"delivery:order:{delivery_id}"
     if not redis_client.exists(delivery_key):
         return {"status": "error", "message": f"Delivery {delivery_id} not found."}
-    # Assuming new_route is a list of locations, store it as a JSON string or similar
-    redis_client.hset(delivery_key, "route", str(new_route))
-    return {"status": "success", "delivery_id": delivery_id, "new_route": new_route}
+    
+    # 쉼표로 구분된 문자열을 리스트로 변환
+    route_list = [location.strip() for location in new_route.split(",") if location.strip()]
+    redis_client.hset(delivery_key, "route", json.dumps(route_list))
+    return {"status": "success", "delivery_id": delivery_id, "new_route": route_list}
 
 def calculate_eta(origin: str, destination: str, vehicle_type: str) -> dict:
     """출발지, 목적지, 차량 유형을 기반으로 예상 도착 시간을 산출합니다."""

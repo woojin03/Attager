@@ -16,7 +16,7 @@ services:
   orchestrator:
     build:
       context: .
-      dockerfile: Orchestrator/Dockerfile
+      dockerfile: Orchestrator_new/Dockerfile
     container_name: orchestrator-agent
     ports:
       - "10000:10000"
@@ -36,6 +36,11 @@ services:
       - ITEM_AGENT_HOST=item-agent
       - QUALITY_AGENT_HOST=quality-agent
       - VEHICLE_AGENT_HOST=vehicle-agent
+      # Gemini 설정 (.env 파일에서 자동 로드)
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI}
+      - USE_GEMINI=${USE_GEMINI}
+      - FALLBACK_TO_LOCAL=${FALLBACK_TO_LOCAL}
     networks:
       - agent-network
     restart: unless-stopped
@@ -54,6 +59,11 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - OLLAMA_HOST=host.docker.internal
+      # Gemini 설정 (.env 파일에서 자동 로드)
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI}
+      - USE_GEMINI=${USE_GEMINI}
+      - FALLBACK_TO_LOCAL=${FALLBACK_TO_LOCAL}
     networks:
       - agent-network
     restart: unless-stopped
@@ -72,6 +82,11 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - OLLAMA_HOST=host.docker.internal
+      # Gemini 설정 (.env 파일에서 자동 로드)
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI}
+      - USE_GEMINI=${USE_GEMINI}
+      - FALLBACK_TO_LOCAL=${FALLBACK_TO_LOCAL}
     networks:
       - agent-network
     restart: unless-stopped
@@ -90,6 +105,11 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - OLLAMA_HOST=host.docker.internal
+      # Gemini 설정 (.env 파일에서 자동 로드)
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI}
+      - USE_GEMINI=${USE_GEMINI}
+      - FALLBACK_TO_LOCAL=${FALLBACK_TO_LOCAL}
     networks:
       - agent-network
     restart: unless-stopped
@@ -108,6 +128,11 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - OLLAMA_HOST=host.docker.internal
+      # Gemini 설정 (.env 파일에서 자동 로드)
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI}
+      - USE_GEMINI=${USE_GEMINI}
+      - FALLBACK_TO_LOCAL=${FALLBACK_TO_LOCAL}
     networks:
       - agent-network
     restart: unless-stopped

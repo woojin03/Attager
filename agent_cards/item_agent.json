@@ -1,7 +1,7 @@
 {
     "name": "Item Agent",
     "description": "delivery_agent.description",
-    "url": "http://${ITEM_AGENT_HOST:-localhost}:10002",
+    "url": "http://localhost:10002",
     "version": "1.0.0",
     "defaultInputModes": ["text", "text/plain"],
     "defaultOutputModes": ["text", "text/plain"],

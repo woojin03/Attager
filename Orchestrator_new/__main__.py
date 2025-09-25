@@ -9,15 +9,14 @@ from a2a.types import (
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
-from agent import root_agent as delivery_agent
+from agent import root_agent as orchestrator_agent
 from agent_executor import ADKAgentExecutor
 
 
-def main(inhost, inport):
-    # Agent card (metadata)
+def main(inhost, inport):    # Agent card (metadata)
     agent_card = AgentCard(
-        name='Delivery Agent',
-        description=delivery_agent.description,
+        name='Orchestrator Agent',
+        description=orchestrator_agent.description,
         url=f'http://{inhost}:{inport}',
         version="1.0.0",
         defaultInputModes=["text", "text/plain"],
@@ -25,15 +24,12 @@ def main(inhost, inport):
         capabilities=AgentCapabilities(streaming=True),
         skills=[
             AgentSkill(
-                id="delivery_agent",
-                name="manage delivery operations",
-                description="Handle delivery data retrieval, status tracking, and delivery management",
-                tags=["delivery", "logistics", "tracking"],
+                id="orchestrator_agent",
+                name="orchestrate other agents",
+                description="Orchestrate other agents by user requestment",
+                tags=["orchestrator"],
                 examples=[
-                    "Read delivery data for ORD1001",
-                    "Get all deliveries",
-                    "Check completed deliveries count",
-                    "Track delivery status"
+                    "What agent should I use to get delivery data for ORD1001",
                 ],
             )
         ],
@@ -41,7 +37,7 @@ def main(inhost, inport):
 
     request_handler = DefaultRequestHandler(
         agent_executor=ADKAgentExecutor(
-            agent=delivery_agent,
+            agent=orchestrator_agent,
         ),
         task_store=InMemoryTaskStore(),
     )
@@ -55,4 +51,4 @@ def main(inhost, inport):
 
 
 if __name__ == "__main__":
-    main("0.0.0.0", 10001)
+    main("127.0.0.1", 10000)
