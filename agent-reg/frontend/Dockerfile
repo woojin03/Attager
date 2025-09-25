@@ -1,3 +1,18 @@
+<<<<<<< main
+# adk-web/Dockerfile.dev
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "start"]
+=======
 # 1단계: React 앱 빌드
 FROM node:18-alpine AS build
 
@@ -14,3 +29,4 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 3000
 CMD ["nginx", "-g", "daemon off;"]
 
+>>>>>>> main
