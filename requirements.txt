@@ -3,18 +3,21 @@ google-adk          # Google Agent Development Kit
 requests           # HTTP requests for agent communication
 uvicorn           # ASGI server for running the agent
 fastapi          # Web framework (if needed by google-adk)
-litellm
-redis
-google-generativeai
-a2a-sdk
+litellm            # LiteLLM for local model support
+redis              # Redis for data storage
+google-generativeai # Google Gemini AI models
+a2a-sdk            # Agent-to-Agent communication
+
+# Environment and configuration
+python-dotenv      # Environment variable management (.env files)
+pyyaml             # YAML configuration support
 
 # Development and testing
 pytest            # Testing framework
 pytest-asyncio    # Async testing support
 
-# Optional: Ollama client (if needed)
+# Optional: Ollama client (for local LLM fallback)
 # ollama
 
-# Utility packages
-python-dotenv      # Environment variable management
-pyyaml               # YAML configuration support
+# Additional utilities
+httpx             # Async HTTP client (used by agents)

@@ -1,7 +1,7 @@
 {
     "name": "Quality Agent",
     "description": "quality_agent.description",
-    "url": "http://${QUALITY_AGENT_HOST:-localhost}:10003",
+    "url": "http://localhost:10003",
     "version": "1.0.0",
     "defaultInputModes": ["text", "text/plain"],
     "defaultOutputModes": ["text", "text/plain"],

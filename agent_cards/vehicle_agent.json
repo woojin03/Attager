@@ -1,7 +1,7 @@
 {
     "name": "Vehicle Agent",
     "description": "vehicle_agent.description",
-    "url": "http://${VEHICLE_AGENT_HOST:-localhost}:10004",
+    "url": "http://localhost:10004",
     "version": "1.0.0",
     "defaultInputModes": ["text", "text/plain"],
     "defaultOutputModes": ["text", "text/plain"],

@@ -18,8 +18,14 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy utils first
+COPY utils/ ./utils/
+
 # Copy agent files
 COPY agents/qulity_agent/ .
+
+# Copy .env file if it exists (for local settings)
+COPY agents/qulity_agent/.env* ./
 
 # Expose port
 EXPOSE 10003
