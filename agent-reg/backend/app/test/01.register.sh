@@ -1,6 +1,5 @@
 #!/bin/bash
 
-<<<<<<< main
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_CARDS_DIR="$SCRIPT_DIR/../../../../agent_cards"
 
@@ -22,7 +21,7 @@ for file in "${files[@]}"; do
 done
 
 echo "✅ All agents from $AGENT_CARDS_DIR registered."
-=======
+
 # Assert 1 parameter is provided
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <file>"
@@ -32,4 +31,3 @@ fi
 file=$1
 
 curl -X POST "http://localhost:8000/agents/register" -H "Content-Type: application/json" -d @$file
->>>>>>> main
