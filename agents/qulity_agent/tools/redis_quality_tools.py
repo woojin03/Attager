@@ -1,3 +1,4 @@
+# /home/agents/tools/redis_quality_tools.py
 import redis
 import os
 
@@ -9,69 +10,73 @@ redis_client = redis.Redis(
     decode_responses=True
 )
 
-def process_return_quality_check(item_id: str, qc_result: str, disposition: str) -> dict:
-    """반품 상품의 품질 검사를 수행하고 상태를 판정합니다.
-    disposition: 'resell', 'discard', 'refurbish' 중 하나."""
-    key = f"quality:return:{item_id}"
-    redis_client.hset(key, mapping={
-        "qc_result": qc_result,
-        "disposition": disposition
-    })
-    return {"status": "success", "item_id": item_id, "qc_result": qc_result, "disposition": disposition}
+def get_quality_data(quality_id: str) -> dict:
+    """품질 ID로 품질 검사 결과 조회"""
+    key = f"quality:{quality_id}"
+    data = redis_client.hgetall(key)
+    if not data:
+        return {"status": "error", "message": f"No quality info found for {quality_id}"}
+    return {"status": "success", "data": data}
 
-def get_items_for_return_qc() -> list[str]:
-    """품질 검사가 필요한 반품 상품 ID 리스트를 조회합니다."""
-    # This is a placeholder. In a real system, this would query a queue or a list of pending items.
-    # For now, let's assume some items are "pending_qc".
-    # We'll use a simple pattern matching for demonstration.
-    qc_pending_keys = redis_client.keys("quality:return:*:pending_qc")
-    return [key.split(':')[2] for key in qc_pending_keys]
+def get_all_quality_checks() -> dict:
+    """모든 품질 검사 결과 조회"""
+    results = []
+    for key in redis_client.scan_iter("quality:*"):
+        data = redis_client.hgetall(key)
+        if data:
+            results.append(data)
+    return {"status": "success", "count": len(results), "data": results}
 
-def get_return_item_disposition(item_id: str) -> dict:
-    """주어진 item_id에 대한 반품 상품의 최종 처분(disposition)을 조회합니다."""
-    key = f"quality:return:{item_id}"
-    disposition = redis_client.hget(key, "disposition")
-    if disposition:
-        return {"status": "success", "item_id": item_id, "disposition": disposition}
-    else:
-        return {"status": "error", "message": f"Disposition for item {item_id} not found."}
+def get_failed_quality_checks() -> dict:
+    """불합격(inspection=failed) 품질 검사 건수 및 목록"""
+    results = []
+    for key in redis_client.scan_iter("quality:*"):
+        data = redis_client.hgetall(key)
+        if data.get("inspection") == "failed":
+            results.append(data)
+    return {"status": "success", "failed_count": len(results), "data": results}
 
-def get_recall_items_list(product_id: str) -> dict:
-    """특정 제품 ID에 대한 리콜 대상 상품 리스트를 추출합니다."""
-    # This is a placeholder. In a real system, this would query a database or a specific recall list.
-    # For demonstration, we'll assume recall items are marked with a pattern.
-    recall_item_keys = redis_client.keys(f"quality:recall:{product_id}:*")
-    item_ids = [key.split(':')[-1] for key in recall_item_keys]
-    return {"status": "success", "product_id": product_id, "recall_items": item_ids}
-
-def process_recall_quality_check(item_id: str, qc_result: str, isolation_status: str) -> dict:
-    """리콜 상품의 품질 검사를 수행하고 격리/추적 상태를 업데이트합니다."""
-    key = f"quality:recall:{item_id}"
-    redis_client.hset(key, mapping={
-        "qc_result": qc_result,
-        "isolation_status": isolation_status
-    })
-    return {"status": "success", "item_id": item_id, "qc_result": qc_result, "isolation_status": isolation_status}
-
-def manage_sellable_inventory(item_id: str, sellable_status: str) -> dict:
-    """상품 ID에 따라 판매 가능/불가 상태를 전환하고 재고에 반영합니다."""
-    key = f"item:id:{item_id}" # Assuming item status is in item agent's key
+def update_quality_result(quality_id: str, inspection: str, defects: int) -> dict:
+    """품질 검사 결과 업데이트"""
+    key = f"quality:{quality_id}"
     if not redis_client.exists(key):
-        return {"status": "error", "message": f"Item {item_id} does not exist."}
-    redis_client.hset(key, "sellable_status", sellable_status)
-    return {"status": "success", "item_id": item_id, "sellable_status": sellable_status}
+        return {"status": "error", "message": f"Quality {quality_id} does not exist."}
+    redis_client.hset(key, mapping={
+        "inspection": inspection,
+        "defects": defects
+    })
+    return {"status": "success", "quality_id": quality_id, "inspection": inspection, "defects": defects}
 
-def set_disposition_for_defect_items(item_id: str, disposition_action: str) -> dict:
-    """결함 상품에 대한 재작업/폐기/재포장/재판매 등의 처분을 결정합니다."""
-    key = f"quality:defect:{item_id}"
-    redis_client.hset(key, "disposition_action", disposition_action)
-    return {"status": "success", "item_id": item_id, "disposition_action": disposition_action}
-
-def record_defect_codes_and_metrics(item_id: str, defect_code: str, metric_value: str) -> dict:
-    """결함 코드를 기록하고 리포트 기초 데이터를 축적합니다."""
-    key = f"quality:defect_log:{item_id}"
+def record_defect_details(quality_id: str, defect_code: str, metric_value: str) -> dict:
+    """품질 검사 항목에 결함 코드 및 측정값 기록"""
+    key = f"quality:defects:{quality_id}"
     redis_client.hset(key, mapping={
         "defect_code": defect_code,
         "metric_value": metric_value
     })
-    return {"status": "success", "item_id": item_id, "defect_code": defect_code, "metric_value": metric_value}
+    return {"status": "success", "quality_id": quality_id, "defect_code": defect_code, "metric_value": metric_value}
+
+def get_items_for_return_qc() -> dict:
+    """품질 검사가 필요한 반품 상품 ID 리스트 조회"""
+    items = []
+    for key in redis_client.scan_iter("quality:*"):
+        data = redis_client.hgetall(key)
+        if data.get("qc_result") == "pending":
+            items.append(data.get("id", key.split(":")[-1]))
+    return {"status": "success", "count": len(items), "items": items}
+
+def get_return_item_disposition(item_id: str) -> dict:
+    """Redis에서 `quality:return:{item_id}` 키의 `disposition` 값을 가져와 반환"""
+    key = f"quality:return:{item_id}"
+    disposition = redis_client.hget(key, "disposition")
+    if disposition is None:
+        return {"status": "error", "message": f"Disposition not found for item {item_id}"}
+    return {"status": "success", "item_id": item_id, "disposition": disposition}
+
+def get_recall_items_list(product_id: str) -> dict:
+    """특정 product_id에 대한 리콜 대상 아이템 리스트 조회"""
+    items = []
+    for key in redis_client.scan_iter(f"quality:recall:{product_id}:*"):
+        item_id = key.split(":")[-1]
+        items.append(item_id)
+    return {"status": "success", "product_id": product_id, "recall_items": items}

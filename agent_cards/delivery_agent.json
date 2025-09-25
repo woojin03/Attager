@@ -1,23 +1,36 @@
 {
-    "name": "Delivery Agent",
-    "description": "delivery_agent.description",
-    "url": "http://localhost:10001",
-    "version": "1.0.0",
-    "defaultInputModes": ["text", "text/plain"],
-    "defaultOutputModes": ["text", "text/plain"],
-    "capabilities": {
-      "streaming": true
-    },
-    "skills": [
-      {
-        "id": "delivery_agent",
-        "name": "read delivery data",
-        "description": "Read requested delivery data from database",
-        "tags": ["delivery"],
-        "examples": [
-          "Read delivery data for ORD1001"
-        ]
-      }
-    ]
-  }
-  
+  "name": "Delivery Agent",
+  "description": "delivery_agent.description",
+  "protocolVersion": "1.0",
+  "url": "http://localhost:10001",
+  "version": "1.0.0",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": true,
+    "stateTransitionHistory": false
+  },
+  "defaultInputModes": [
+    "text",
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text",
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "delivery_lookup",
+      "name": "Delivery Lookup",
+      "description": "주문번호별 배송 상태, 전체 배송 목록, 완료된 배송 수를 조회할 수 있다",
+      "tags": [
+        "delivery",
+        "order tracking",
+        "shipping"
+      ],
+      "examples": [
+        "ORD1001 주문 상태 알려줘",
+        "완료된 배송 수 알려줘"
+      ]
+    }
+  ]
+}

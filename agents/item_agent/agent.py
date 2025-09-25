@@ -11,6 +11,8 @@ from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
 from google.genai import types
 from utils.model_config import get_model_with_fallback
+from google.adk.tools import FunctionTool
+
 
 # 현재 폴더의 .env 파일 로드
 load_dotenv()
@@ -19,10 +21,11 @@ load_dotenv()
 from tools.redis_item_tools import (
     get_item_details,
     track_item_inventory,
+    get_all_warehouse_inventories_for_item,
     # update_item_status,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("item_agent")
 logger.setLevel(logging.DEBUG)
 
 # --- 1. Agent 정의 ---
@@ -47,11 +50,12 @@ root_agent = LlmAgent(
     instruction="""너는 상품 관리 에이전트다.
     - 사용자가 상품 ID를 말하면 반드시 get_item_details 툴을 호출해야 한다.
     - '재고 수량'을 물어보면 track_item_inventory 툴을 호출해야 한다.
-    """, # - '상품 상태 업데이트'를 요청하면 update_item_status 툴을 호출해야 한다.
+    - 만약 지정한 warehouse_id에 상품이 없으면, get_all_warehouse_inventories_for_item을 호출해서 다른 창고에 있는지 확인하라.
+    """,
     tools=[
-        get_item_details,
-        track_item_inventory,
-        # update_item_status,
+        FunctionTool(get_item_details),
+        FunctionTool(track_item_inventory),
+        FunctionTool(get_all_warehouse_inventories_for_item),
     ],
 )
 

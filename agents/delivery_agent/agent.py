@@ -12,6 +12,7 @@ from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
 from google.genai import types
 from utils.model_config import get_model_with_fallback
+from google.adk.tools import FunctionTool
 
 # 현재 폴더의 .env 파일 로드
 load_dotenv()
@@ -48,7 +49,11 @@ root_agent = LlmAgent(
     - '모든 배송 데이터'를 원하면 get_all_deliveries 툴을 호출해야 한다.
     - '완료된 배송 수'를 물어보면 get_completed_deliveries 툴을 호출해야 한다.
     """,
-    tools=[get_delivery_data, get_all_deliveries, get_completed_deliveries],
+        tools=[
+        FunctionTool(get_delivery_data),
+        FunctionTool(get_all_deliveries),
+        FunctionTool(get_completed_deliveries),
+    ],
 )
 
 # --- 2. Runner + 세션 서비스 ---

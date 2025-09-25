@@ -137,10 +137,40 @@ services:
       - agent-network
     restart: unless-stopped
 
+  # Agent Registry
+  agent-registry:
+    build:
+      context: ./agent-reg
+      dockerfile: Dockerfile
+    container_name: agent-registry
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_PATH=/app/agent_reg.db
+    volumes:
+      - agent_reg_data:/app
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  # Agent Registry Frontend
+  agent-registry-frontend:
+    build:
+      context: ./agent-reg/frontend
+      dockerfile: Dockerfile
+    container_name: agent-registry-frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - agent-network
+    restart: unless-stopped
+
 networks:
   agent-network:
     driver: bridge
 
 volumes:
   redis-data:
+    driver: local
+  agent_reg_data:
     driver: local

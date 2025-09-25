@@ -1,105 +1,188 @@
-# /home/agents/tools/redis_tools.py
-import redis
-import json
+# /home/agents/tools/redis_delivery_tools.py
 import os
+import redis
+from typing import Dict, Any, Optional, List, Tuple
 
 # Redis 연결
 redis_client = redis.Redis(
     host=os.getenv("REDIS_HOST", "localhost"),
     port=int(os.getenv("REDIS_PORT", "6379")),
     db=0,
-    decode_responses=True
+    decode_responses=True,
 )
 
-def get_delivery_data(order_id: str) -> dict:
-    """주문 ID로 배송 상세 조회"""
-    key = f"delivery:order:{order_id}"
-    data = redis_client.hgetall(key)
-    if not data:
-        return {"status": "error", "message": f"No delivery info found for {order_id}"}
-    return {"status": "success", "data": data}
+# ---------- 내부 유틸 ----------
+
+PREFIXES = ("quality", "delivery", "vehicle", "item")
+
+def _exists_key(prefix: str, ident: str) -> bool:
+    return redis_client.exists(f"{prefix}:{ident}") == 1
+
+def _get_hash(prefix: str, ident: str) -> Dict[str, str]:
+    return redis_client.hgetall(f"{prefix}:{ident}")
+
+def _scan_first(prefix: str, field: str, value: str) -> Optional[Dict[str, str]]:
+    """
+    지정 prefix:*, field==value 인 해시 1개를 찾아 반환 (없으면 None).
+    """
+    for key in redis_client.scan_iter(f"{prefix}:*"):
+        data = redis_client.hgetall(key)
+        if data.get(field) == value:
+            return data
+    return None
+
+def _scan_all(prefix: str, field: str, value: str) -> List[Dict[str, str]]:
+    """
+    지정 prefix:*, field==value 인 해시 전부를 리스트로 반환.
+    """
+    out = []
+    for key in redis_client.scan_iter(f"{prefix}:*"):
+        data = redis_client.hgetall(key)
+        if data.get(field) == value:
+            out.append(data)
+    return out
+
+def _infer_type_and_load(ident: str) -> Tuple[Optional[str], Optional[Dict[str, str]]]:
+    """
+    ident(Q001/D001/V001/I001 등)로부터 타입을 추정하고 해시를 로드.
+    1) 키 존재 확인으로 빠르게 판별
+    2) 없으면 id 필드 스캔으로 판별
+    """
+    # 1) 키 존재로 판별
+    candidates = [p for p in PREFIXES if _exists_key(p, ident)]
+    if len(candidates) == 1:
+        p = candidates[0]
+        return p, _get_hash(p, ident)
+    elif len(candidates) > 1:
+        # 이례적 중복: 우선순위 부여 (delivery > vehicle > item > quality)
+        for p in ("delivery", "vehicle", "item", "quality"):
+            if p in candidates:
+                return p, _get_hash(p, ident)
+
+    # 2) id 필드 스캔으로 판별
+    for p in PREFIXES:
+        data = _scan_first(p, "id", ident)
+        if data:
+            return p, data
+
+    return None, None
+
+def _build_context_from(start_type: str, start_data: Dict[str, str]) -> Dict[str, Any]:
+    """
+    출발 엔티티에서 전체 컨텍스트(quality, delivery, vehicle, items)를 구성.
+    """
+    result: Dict[str, Any] = {}
+    quality, delivery, vehicle = None, None, None
+    items: List[Dict[str, str]] = []
+
+    # 출발점 배치
+    if start_type == "quality":
+        quality = start_data
+    elif start_type == "delivery":
+        delivery = start_data
+    elif start_type == "vehicle":
+        vehicle = start_data
+    elif start_type == "item":
+        items = [start_data]
+    else:
+        return result
+
+    # --- 상하위 추적 규칙 ---
+    # delivery <-> quality : delivery.quality_id == quality.id
+    # vehicle <-> delivery : vehicle.delivery_id == delivery.id
+    # item    -> vehicle   : item.vehicle_id == vehicle.id
+
+    # 1) delivery 채우기
+    if delivery is None and quality is not None:
+        delivery = _scan_first("delivery", "quality_id", quality.get("id", ""))
+
+    if delivery is None and vehicle is not None:
+        # vehicle.delivery_id 로 delivery 찾기
+        did = vehicle.get("delivery_id")
+        if did:
+            # 빠른 경로
+            if _exists_key("delivery", did):
+                delivery = _get_hash("delivery", did)
+            else:
+                delivery = _scan_first("delivery", "id", did)
+
+    if delivery is None and items:
+        # 아이템에서 vehicle 거쳐 delivery 도달
+        v_id = items[0].get("vehicle_id")
+        if v_id:
+            v = _get_hash("vehicle", v_id) if _exists_key("vehicle", v_id) else _scan_first("vehicle", "id", v_id)
+            if v:
+                vehicle = vehicle or v
+                did = v.get("delivery_id")
+                if did:
+                    delivery = _get_hash("delivery", did) if _exists_key("delivery", did) else _scan_first("delivery", "id", did)
+
+    # 2) quality 채우기
+    if quality is None and delivery is not None:
+        qid = delivery.get("quality_id")
+        if qid:
+            quality = _get_hash("quality", qid) if _exists_key("quality", qid) else _scan_first("quality", "id", qid)
+
+    # 3) vehicle 채우기
+    if vehicle is None and delivery is not None:
+        did = delivery.get("id", "")
+        if did:
+            vehicle = _scan_first("vehicle", "delivery_id", did)
+
+    # 4) items 채우기 (여러 개 가능)
+    if not items and vehicle is not None:
+        vid = vehicle.get("id", "")
+        if vid:
+            items = _scan_all("item", "vehicle_id", vid)
+
+    # 결과 구성 (존재하는 것만)
+    if quality:
+        result["quality"] = quality
+    if delivery:
+        result["delivery"] = delivery
+    if vehicle:
+        result["vehicle"] = vehicle
+    if items:
+        result["items"] = items
+
+    return result
+
+# ---------- 공개 툴 함수 ----------
+
+def get_delivery_data(identifier: str) -> dict:
+    """
+    어떤 식별자든(Q001/D001/V001/I001) 받으면 전체 컨텍스트를 조회해서 반환.
+    - 입력: identifier (예: "Q001", "D001", "V001", "I001")
+    - 출력: { status, data: {quality?, delivery?, vehicle?, items?} }
+    """
+    start_type, start_data = _infer_type_and_load(identifier)
+    if not start_type or not start_data:
+        return {"status": "error", "message": f"No entity found for '{identifier}'"}
+
+    context = _build_context_from(start_type, start_data)
+    if not context:
+        return {"status": "error", "message": f"Context build failed for '{identifier}'"}
+
+    return {"status": "success", "data": context, "start_type": start_type}
 
 def get_all_deliveries() -> dict:
-    """Redis에 저장된 모든 배송 데이터를 가져오기"""
+    """
+    모든 배송 해시 반환 (delivery:*)
+    """
     deliveries = []
-    for key in redis_client.scan_iter("delivery:order:*"):
+    for key in redis_client.scan_iter("delivery:*"):
         data = redis_client.hgetall(key)
         if data:
             deliveries.append(data)
     return {"status": "success", "count": len(deliveries), "data": deliveries}
 
 def get_completed_deliveries() -> dict:
-    """배송 상태가 completed 인 주문 개수 세기"""
-    deliveries = []
-    for key in redis_client.scan_iter("delivery:order:*"):
+    """
+    상태가 delivered 인 배송 건수/목록
+    """
+    completed = []
+    for key in redis_client.scan_iter("delivery:*"):
         data = redis_client.hgetall(key)
-        if data.get("status") == "completed":
-            deliveries.append(data)
-    return {"status": "success", "completed_count": len(deliveries), "data": deliveries}
-
-def create_redelivery_request(original_order_id: str, item_id: str, delivery_type: str, customer_info: dict) -> dict:
-    """리퍼브나 교환 대상 상품에 대한 재배송 요청을 생성합니다.
-    delivery_type: 'refurbish' 또는 'exchange'."""
-    # In a real system, this would involve more complex logic, including generating a new order ID,
-    # checking inventory, scheduling, etc. For now, we'll just log the request.
-    redelivery_key = f"redelivery:request:{original_order_id}:{item_id}"
-    request_data = {
-        "original_order_id": original_order_id,
-        "item_id": item_id,
-        "delivery_type": delivery_type,
-        "customer_name": customer_info.get("name"),
-        "customer_address": customer_info.get("address"),
-        "status": "pending"
-    }
-    redis_client.hset(redelivery_key, mapping=request_data)
-    return {"status": "success", "message": "Redelivery request created", "request_id": redelivery_key}
-
-def get_redelivery_request_status(original_order_id: str, item_id: str) -> dict:
-    """특정 재배송 요청의 상태를 조회합니다."""
-    redelivery_key = f"redelivery:request:{original_order_id}:{item_id}"
-    data = redis_client.hgetall(redelivery_key)
-    if not data:
-        return {"status": "error", "message": f"Redelivery request for {original_order_id}/{item_id} not found."}
-    return {"status": "success", "data": data}
-
-def update_delivery_route(delivery_id: str, new_route: str) -> dict:
-    """주어진 배송 ID의 배송 경로를 업데이트합니다. new_route는 쉼표로 구분된 위치 목록입니다."""
-    delivery_key = f"delivery:order:{delivery_id}"
-    if not redis_client.exists(delivery_key):
-        return {"status": "error", "message": f"Delivery {delivery_id} not found."}
-    
-    # 쉼표로 구분된 문자열을 리스트로 변환
-    route_list = [location.strip() for location in new_route.split(",") if location.strip()]
-    redis_client.hset(delivery_key, "route", json.dumps(route_list))
-    return {"status": "success", "delivery_id": delivery_id, "new_route": route_list}
-
-def calculate_eta(origin: str, destination: str, vehicle_type: str) -> dict:
-    """출발지, 목적지, 차량 유형을 기반으로 예상 도착 시간을 산출합니다."""
-    # This would involve a complex geospatial and traffic analysis in a real system.
-    # For this simulation, we'll use a placeholder logic.
-    distance = abs(hash(origin) - hash(destination)) % 1000 # Dummy distance
-    speed_factor = {"truck": 60, "van": 80, "motorcycle": 100}.get(vehicle_type, 70) # km/h
-    eta_hours = distance / speed_factor
-    return {"status": "success", "origin": origin, "destination": destination, "eta_hours": round(eta_hours, 2)}
-
-def create_recall_collection_schedule(recall_id: str, item_id: str, customer_info: dict, collection_date: str) -> dict:
-    """리콜 상품 회수를 위한 고객 대상 배송 일정을 생성합니다."""
-    collection_key = f"recall:collection:{recall_id}:{item_id}"
-    schedule_data = {
-        "recall_id": recall_id,
-        "item_id": item_id,
-        "customer_name": customer_info.get("name"),
-        "customer_address": customer_info.get("address"),
-        "collection_date": collection_date,
-        "status": "scheduled"
-    }
-    redis_client.hset(collection_key, mapping=schedule_data)
-    return {"status": "success", "message": "Recall collection schedule created", "collection_key": collection_key}
-
-def get_recall_collection_schedule(recall_id: str, item_id: str) -> dict:
-    """특정 리콜 상품 회수 일정을 조회합니다."""
-    collection_key = f"recall:collection:{recall_id}:{item_id}"
-    data = redis_client.hgetall(collection_key)
-    if not data:
-        return {"status": "error", "message": f"Recall collection schedule for {recall_id}/{item_id} not found."}
-    return {"status": "success", "data": data}
+        if data.get("status") == "delivered":
+            completed.append(data)
+    return {"status": "success", "completed_count": len(completed), "data": completed}

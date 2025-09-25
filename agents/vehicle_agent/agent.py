@@ -11,6 +11,7 @@ from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
 from google.genai import types
 from utils.model_config import get_model_with_fallback
+from google.adk.tools import FunctionTool
 
 # 현재 폴더의 .env 파일 로드
 load_dotenv()
@@ -61,14 +62,15 @@ root_agent = LlmAgent(
     - '최적 차량 추천'을 요청하면 recommend_optimal_vehicles 툴을 호출해야 한다.
     """,
     tools=[
-        get_fleet_availability,
-        get_vehicle_status,
-        filter_available_vehicles,
-        get_vehicles_on_maintenance,
-        get_assigned_recall_vehicles,
-        get_vehicle_capacity,
-        recommend_optimal_vehicles,
+        FunctionTool(get_fleet_availability),
+        FunctionTool(get_vehicle_status),
+        FunctionTool(filter_available_vehicles),
+        FunctionTool(get_vehicles_on_maintenance),
+        FunctionTool(get_assigned_recall_vehicles),
+        FunctionTool(get_vehicle_capacity),
+        FunctionTool(recommend_optimal_vehicles),
     ],
+
 )
 
 # --- 2. Runner + 세션 서비스 ---

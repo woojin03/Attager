@@ -11,6 +11,7 @@ from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
 from google.genai import types
 from utils.model_config import get_model_with_fallback
+from google.adk.tools import FunctionTool
 
 # 현재 폴더의 .env 파일 로드
 load_dotenv()
@@ -53,9 +54,9 @@ root_agent = LlmAgent(
     - '특정 제품 ID의 리콜 대상 상품 리스트'를 요청하면 get_recall_items_list 툴을 호출해야 한다.
     """,
     tools=[
-        get_items_for_return_qc,
-        get_return_item_disposition,
-        get_recall_items_list,
+        FunctionTool(get_items_for_return_qc),
+        FunctionTool(get_return_item_disposition),
+        FunctionTool(get_recall_items_list),
     ],
 )
 
