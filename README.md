@@ -1,6 +1,4 @@
-# Attager - Multi-Agent Logistics System
-
-> **Google Gemini 지원 다중 에이전트 물류 관리 시스템**
+**Google Gemini 지원 다중 에이전트 물류 관리 시스템**
 
 Attager는 Google Gemini API를 활용한 지능형 다중 에이전트 물류 관리 시스템입니다. 배송, 상품, 품질, 차량 관리를 각각의 전문 에이전트가 담당하며, 중앙 오케스트레이터가 이들을 조정합니다.
 
@@ -320,7 +318,6 @@ docker ps | grep redis
 # Redis 연결 테스트
 redis-cli ping
 ```
-
 #### 3. Docker 빌드 오류
 ```bash
 # 캐시 클리어 후 재빌드
@@ -391,5 +388,3 @@ docker compose logs -f
 문제가 있거나 질문이 있으시면 Issue를 생성해 주세요.
 
 ---
-
-**Made with ❤️ and 🤖 Gemini AI**
