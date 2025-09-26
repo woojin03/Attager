@@ -53,7 +53,7 @@ def get_model_with_fallback() -> Any:
                     raise ValueError("Google API Key가 설정되지 않았고 fallback이 비활성화되어 있습니다.")
             
             # Gemini 모델 사용 - Google ADK 문서에 따라 직접 문자열로 전달
-            model_name = get_gemini_model("gemini-1.5-pro-latest")
+            model_name = get_gemini_model("gemini-2.0-flash")
             logger.info(f"Gemini 모델을 사용합니다: {model_name}")
             return model_name
             
@@ -79,7 +79,7 @@ def get_local_model() -> LiteLlm:
         temperature=0.7,
     )
 
-def get_gemini_model(model_name: str = "gemini-1.5-pro-latest") -> str:
+def get_gemini_model(model_name: str = "gemini-2.0-flash") -> str:
     """
     Gemini 모델명 반환 (Google ADK에서 직접 문자열로 사용)
     """
