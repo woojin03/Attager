@@ -2,6 +2,8 @@ site_name: Secure A2A MAS Build Manual
 site_description: A2A를 적용한 안전한 MAS 환경 구축 문서
 site_author: Attager
 repo_url: https://github.com/N4V1SW4N/Attager
+docs_dir: src
+site_dir: docs
 
 theme:
   name: material

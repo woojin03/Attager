@@ -1,0 +1,95 @@
+/* ============================================================================
+   Material for MkDocs (md-*) 커스텀 스타일
+   - 공통 토큰(간격, 크기) 정의
+   - 이미지 정렬/여백
+   - 크롭 유틸리티
+   - 컨텐츠 폭
+   - 헤더 로고/제목 간격
+   ============================================================================ */
+
+:root {
+  /* 간격 토큰 */
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+
+  /* 레이아웃/컴포넌트 토큰 */
+  --content-max-width: 1200px;
+  --logo-height: 2.4rem;
+
+  /* 이미지 크롭 높이 */
+  --crop-height: 360px;
+  --crop-height-tall: 460px;
+
+  /* 모서리 둥글기 */
+  --radius-sm: 6px;
+}
+
+/* ========== 1) 마크다운 이미지 정렬/간격 ========== */
+/* 모든 마크다운 이미지를 가운데 정렬하고 기본 상하 여백을 약간 줄임 */
+.md-typeset img {
+  display: block;
+  margin: var(--space-xs) auto;
+}
+
+/* figure 요소 간 간격을 소폭 축소 */
+.md-typeset figure {
+  margin: var(--space-sm) auto;
+}
+
+/* ========== 2) 이미지 가운데 크롭 유틸리티 ========== */
+/* 부모 박스로 크롭 영역을 만들고 내부 img를 중앙 채움 */
+.center-crop {
+  width: 100%;
+  max-width: 900px;
+  height: var(--crop-height);
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+.center-crop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;        /* 영역을 가득 채우되 넘치는 부분은 크롭 */
+  object-position: center;  /* 중앙 기준으로 크롭 */
+}
+
+/* 높이만 더 큰 변형 */
+.center-crop--tall {
+  height: var(--crop-height-tall);
+}
+
+/* ========== 3) 컨텐츠 영역 폭(양 옆 여백 감소) ========== */
+.md-grid {
+  max-width: var(--content-max-width);
+}
+
+/* ========== 4) 헤더 로고 크기/간격 조정 ========== */
+/* 로고 이미지 크기 통일 */
+.md-header__button.md-logo img,
+.md-logo {
+  height: var(--logo-height);
+  width: auto;
+}
+
+/* 로고 버튼 상하 패딩 제거로 헤더 높이 낭비 최소화 */
+.md-header__button.md-logo {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* 로고와 제목 사이 간격을 최소화 (테마 버전별 래퍼 대응) */
+.md-header__button.md-logo {
+  margin-right: var(--space-2xs) !important;
+}
+
+.md-header__button.md-logo ~ .md-header__title,
+.md-header__title {
+  margin-left: var(--space-2xs) !important;
+}
+
+/* 일부 버전은 제목 내부 래퍼에 추가 여백이 있어 별도 초기화 필요 */
+.md-header__title .md-header__ellipsis,
+.md-header__title .md-header__topic {
+  margin-left: 0 !important;
+}
