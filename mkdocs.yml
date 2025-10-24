@@ -1,5 +1,5 @@
 site_name: Secure A2A MAS Build Manual
-site_description: A2A를 적용한 안전한 MAS 환경 구축 문서
+site_description: A2A�??�용???�전??MAS ?�경 구축 문서
 site_author: Attager
 repo_url: https://github.com/N4V1SW4N/Attager
 docs_dir: src
@@ -8,17 +8,17 @@ site_dir: docs
 theme:
   name: material
   features:
-    # ⚙️ 기본 내비게이션 기능
-    - navigation.instant       # 페이지 전환 빠르게 (SPA처럼)
-    - navigation.sections      # 사이드바에 구역별 표시
-    - navigation.expand        # 메뉴 자동 펼침
-    - content.code.copy        # 코드 블록에 복사 버튼 추가
-    # 🧭 목차(ToC) 관련
-    - toc.follow               # 우측 자동 목차 패널 활성화
-    - toc.sticky               # 스크롤 시 목차 고정
-    # ⬆️ 추가 UX 요소
-    - navigation.top           # 상단으로 이동 버튼
-    - header.autohide          # 스크롤 시 헤더 자동 숨김
+    # ?�️ 기본 ?�비게이??기능
+    - navigation.instant       # ?�이지 ?�환 빠르�?(SPA처럼)
+    - navigation.sections      # ?�이?�바??구역�??�시
+    - navigation.expand        # 메뉴 ?�동 ?�침
+    - content.code.copy        # 코드 블록??복사 버튼 추�?
+    # ?�� 목차(ToC) 관??
+    - toc.follow               # ?�측 ?�동 목차 ?�널 ?�성??
+    - toc.sticky               # ?�크�???목차 고정
+    # ⬆️ 추�? UX ?�소
+    - navigation.top           # ?�단?�로 ?�동 버튼
+    - header.autohide          # ?�크�????�더 ?�동 ?��?
 
   palette:
     - scheme: default
@@ -29,10 +29,10 @@ theme:
       accent: deep purple
       toggle:
         icon: material/weather-night
-        name: 다크모드 전환
+        name: ?�크모드 ?�환
 
-  # 상단 아이콘 / 제목 커스터마이징 (선택)
-  logo: assets/attager-logo.png          # 선택: 로고 이미지 경로
+  # ?�단 ?�이�?/ ?�목 커스?�마?�징 (?�택)
+  logo: assets/attager-logo.png          # ?�택: 로고 ?��?지 경로
 
 extra_css:
   - stylesheets/extra.css
@@ -55,7 +55,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - 네비게이션바1: nav1.md
-  - 네비게이션바2: nav2.md
-  - 네비게이션바3: nav3.md
+  - ����: nav1.md
+  - ?�비게이?�바2: nav2.md
+  - ?�비게이?�바3: nav3.md
   - Reference: references.md
